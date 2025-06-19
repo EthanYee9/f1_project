@@ -1,0 +1,29 @@
+version: '3'
+
+services: 
+  postgres:
+    image: postgres:latest
+    ports:
+    - "5433:5432"
+    networks:
+    - network
+    environment: 
+      POSTGRES_DB: destination_db
+      POSTGRES_USER: postgres 
+      POSTGRES_PASSWORD: secret
+    volumes:
+      ./src/extract_csv.py:/docker-enterypoint-initdb.d/extract_csv.py
+
+  etl_script:
+    build:
+      context: ./etl_script 
+      dockerfile: Dockerfile 
+    command: ["python", "etl_script.py"]
+    networks:
+      - network
+    depends_on:
+      - destination_postgres
+
+networks:
+  network:
+    driver: bridge
