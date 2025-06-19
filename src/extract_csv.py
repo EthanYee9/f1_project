@@ -43,8 +43,17 @@ def transform_df(table_name):
             race_results_df = csv_to_df("results")
             race_results_df = race_results_df.loc[:, ["raceId", "driverId", "position", "grid", "points", "fastestLapTime", "constructorId"]]
             race_results_df.rename(columns={"raceId": "race_id", "driverId": "driver_id", "position": "finish_position", "grid": "starting_position", "fastestLapTime": "fastest_lap_time", "constructorId": "constructor_id"}, inplace=True)
-            print(race_results_df)
-
+            return race_results_df
+        case "fact_driver_standings":
+            driver_standings_df = csv_to_df("driver_standings")
+            driver_standings_df = driver_standings_df.loc[:, ["raceId", "driverId", "points", "position", "wins"]]
+            driver_standings_df.rename(columns={"raceId": "race_id", "driverId": "driver_id"}, inplace=True)
+            return driver_standings_df
+        case "fact_constructor_standings":
+            constructor_standings_df = csv_to_df("constructor_standings")
+            constructor_standings_df = constructor_standings_df.loc[:, ["raceId", "constructorId", "points", "position", "wins"]]
+            constructor_standings_df.rename(columns={"raceId": "race_id", "constructorId": "constructor_id"})
+            return constructor_standings_df
 
 def insert_into_warehouse(df):
     pass 
