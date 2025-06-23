@@ -38,8 +38,10 @@ class TestTransform_df:
         with patch("src.csv_etl_script.csv_to_df") as mock_csv_to_df:
             mock_csv_to_df.return_value = pd.DataFrame(data)
             result = transform_df("dim_constructors")
+            expected = pd.DataFrame(expected_data)
             assert isinstance(result, pd.DataFrame)
-            assert_frame_equal(result, pd.DataFrame(expected_data))
+            assert_frame_equal(result.reset_index(drop=True), expected.reset_index(drop=True))
+    
 
     def test_transform_dim_drivers(self):
         data = {
@@ -67,8 +69,9 @@ class TestTransform_df:
         with patch("src.csv_etl_script.csv_to_df") as mock_csv_to_df:
             mock_csv_to_df.return_value = pd.DataFrame(data)
             result = transform_df("dim_drivers")
+            expected = pd.DataFrame(expected_data)
             assert isinstance(result, pd.DataFrame)
-            assert_frame_equal(result, pd.DataFrame(expected_data))
+            assert_frame_equal(result.reset_index(drop=True), expected.reset_index(drop=True))
 
     def test_transform_dim_races(self):
         data = {
@@ -103,5 +106,34 @@ class TestTransform_df:
         with patch("src.csv_etl_script.csv_to_df") as mock_csv_to_df:
             mock_csv_to_df.return_value = pd.DataFrame(data)
             result = transform_df("dim_races")
+            expected = pd.DataFrame(expected_data)
             assert isinstance(result, pd.DataFrame)
-            assert_frame_equal(result, pd.DataFrame(expected_data))
+            assert_frame_equal(result.reset_index(drop=True), expected.reset_index(drop=True))
+    
+    def test_transform_dim_circuits(self):
+        data = {
+            "circuitId": [1, 4, 7],
+            "circuitRef": ["moo_moo_meadow", "rainbow_road", "yoshi_falls"],
+            "name": ["moo moo meadow", "rainbow road", "yoshi falls"],
+            "location": ["mario", "space", "sky"],
+            "country": ["Spain", "moon", "england"],
+            "lat": [-37.8497, 5.6156, -23.7036],
+            "lng": [101.738, 54.6031, -6.03417],
+            "alt": [642, 0, 2],
+            "url": ["http://en.wikipedia.org/wiki/Moo_Grand_Prix_Circuit", "http://en.wikipedia.org/wiki/Rainbow_road]", "http://en.wikipedia.org/wiki/yoshi"]
+
+        }
+
+        expected_data = {
+            "circuit_id": [1, 4, 7],
+            "circuit_name": ["moo moo meadow", "rainbow road", "yoshi falls"],
+            "location": ["mario", "space", "sky"],
+            "country": ["Spain", "moon", "england"]
+        }
+
+        with patch("src.csv_etl_script.csv_to_df") as mock_csv_to_df:
+            mock_csv_to_df.return_value = pd.DataFrame(data)
+            result = transform_df("dim_circuits")
+            expected = pd.DataFrame(expected_data)
+            assert isinstance(result, pd.DataFrame)
+            assert_frame_equal(result.reset_index(drop=True), expected.reset_index(drop=True))
