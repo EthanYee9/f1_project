@@ -1,3 +1,4 @@
 pytest 
 pg8000
 pandas
+pytest-testdox

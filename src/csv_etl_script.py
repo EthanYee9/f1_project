@@ -1,5 +1,5 @@
-import csv 
 import pandas as pd
+from pg8000.native import Connection 
 
 def etl_csv():
     table_names = [
@@ -11,49 +11,58 @@ def etl_csv():
         transformed_df = transform_df(table_name)
         insert_into_warehouse(transformed_df)
 
-def csv_to_df(file_name):
-    df = pd.read_csv(f"data/{file_name}.csv")
+def csv_to_df(file_path):
+    df = pd.read_csv(file_path)
     return df
 
 def transform_df(table_name):
     match table_name:
         case "dim_constructors":
-            constructors_df = csv_to_df("constructors")
+            constructors_df = csv_to_df("data/constructors.csv")
             constructors_df = constructors_df.loc[:,["constructorId", "name", "nationality"]]
             constructors_df.rename(columns={"constructorId": "constructor_id", "name": "constructor_name"}, inplace=True)
             return constructors_df
         case "dim_drivers":
-            drivers_df = csv_to_df("drivers")
+            drivers_df = csv_to_df("data/drivers.csv")
             drivers_df = drivers_df.loc[:, ["driverId", "forename", "surname", "number", "nationality", "dob"]]
             drivers_df.rename(columns={"driverId": "driver_id", "number": "driver_number"}, inplace=True)
             drivers_df["full_name"] = drivers_df["forename"] + " " + drivers_df["surname"]
             drivers_df = drivers_df[["driver_id", "forename", "surname", "full_name", "driver_number", "nationality", "dob"]]
             return drivers_df
         case "dim_races":
-            races_df = csv_to_df("races")
+            races_df = csv_to_df("data/races.csv")
             races_df = races_df.loc[:, ["raceId", "circuitId", "year", "round", "date"]]
             races_df.rename(columns={"raceId": "race_id", "circuitId": "circuit_id"}, inplace=True)
             return races_df
         case "dim_circuits":
-            circuits_df = csv_to_df("circuits")
+            circuits_df = csv_to_df("data/circuits.csv")
             circuits_df = circuits_df.loc[:, ["circuitId", "name", "location", "country"]]
             circuits_df.rename(columns={"name": "circuit_name", "circuitId": "circuit_id"}, inplace=True)
             return circuits_df
         case "fact_race_results":
-            race_results_df = csv_to_df("results")
+            race_results_df = csv_to_df("data/results.csv")
             race_results_df = race_results_df.loc[:, ["raceId", "driverId", "position", "grid", "points", "fastestLapTime", "constructorId"]]
             race_results_df.rename(columns={"raceId": "race_id", "driverId": "driver_id", "position": "finish_position", "grid": "starting_position", "fastestLapTime": "fastest_lap_time", "constructorId": "constructor_id"}, inplace=True)
             return race_results_df
         case "fact_driver_standings":
-            driver_standings_df = csv_to_df("driver_standings")
+            driver_standings_df = csv_to_df("data/driver_standings.csv")
             driver_standings_df = driver_standings_df.loc[:, ["raceId", "driverId", "points", "position", "wins"]]
             driver_standings_df.rename(columns={"raceId": "race_id", "driverId": "driver_id"}, inplace=True)
             return driver_standings_df
         case "fact_constructor_standings":
-            constructor_standings_df = csv_to_df("constructor_standings")
+            constructor_standings_df = csv_to_df("data/constructor_standings.csv")
             constructor_standings_df = constructor_standings_df.loc[:, ["raceId", "constructorId", "points", "position", "wins"]]
             constructor_standings_df.rename(columns={"raceId": "race_id", "constructorId": "constructor_id"})
             return constructor_standings_df
+
+def create_connection():
+    user = "postgres"
+    database = "destination_db"
+    dbport = "5432"
+    password = "secret"
+    return Connection(
+        database=database, user=user, password=password, port=dbport
+    )
 
 def insert_into_warehouse(df):
     pass 
