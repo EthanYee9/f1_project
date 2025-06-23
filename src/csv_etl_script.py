@@ -12,7 +12,7 @@ def etl_csv():
         insert_into_warehouse(transformed_df)
 
 def csv_to_df(file_path):
-    df = pd.read_csv(file_path)
+    df = pd.read_csv(file_path, na_values="\\N")
     return df
 
 def transform_df(table_name):
@@ -52,7 +52,7 @@ def transform_df(table_name):
         case "fact_constructor_standings":
             constructor_standings_df = csv_to_df("data/constructor_standings.csv")
             constructor_standings_df = constructor_standings_df.loc[:, ["raceId", "constructorId", "points", "position", "wins"]]
-            constructor_standings_df.rename(columns={"raceId": "race_id", "constructorId": "constructor_id"})
+            constructor_standings_df.rename(columns={"raceId": "race_id", "constructorId": "constructor_id"}, inplace=True)
             return constructor_standings_df
 
 def create_connection():
