@@ -6,24 +6,22 @@ services:
     ports:
     - "5433:5432"
     networks:
-    - network
+    - etl_network
     environment: 
       POSTGRES_DB: destination_db
       POSTGRES_USER: postgres 
       POSTGRES_PASSWORD: secret
-    volumes:
-      ./src/extract_csv.py:/docker-enterypoint-initdb.d/extract_csv.py
 
   etl_script:
     build:
-      context: ./etl_script 
+      context: ./src
       dockerfile: Dockerfile 
-    command: ["python", "etl_script.py"]
+    command: ["python", "csv_etl_script.py"]
     networks:
-      - network
+      - etl_network
     depends_on:
-      - destination_postgres
+      - postgres
 
 networks:
-  network:
+  etl_network:
     driver: bridge

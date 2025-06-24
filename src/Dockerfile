@@ -1,6 +1,6 @@
 FROM python:3.13-slim
-RUN apt-get update && apt-get install -y postgres-client  
+RUN apt-get update && apt-get install -y postgresql-client  
 COPY requirements.txt .
 RUN pip install -r requirements.txt
-COPY etl_script.py .
-CMD ["python", "src/etl_script.py"]
+COPY csv_etl_script.py .
+CMD ["python", "src/csv_etl_script.py"]
