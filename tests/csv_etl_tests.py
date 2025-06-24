@@ -40,7 +40,7 @@ class TestTransform_df:
             result = transform_df("dim_constructors")
             expected = pd.DataFrame(expected_data)
             assert isinstance(result, pd.DataFrame)
-            assert_frame_equal(result.reset_index(drop=True), expected.reset_index(drop=True))
+            assert_frame_equal(result, expected, check_like=True)
     
 
     def test_transform_dim_drivers(self):
@@ -71,8 +71,8 @@ class TestTransform_df:
             result = transform_df("dim_drivers")
             expected = pd.DataFrame(expected_data)
             assert isinstance(result, pd.DataFrame)
-            assert_frame_equal(result.reset_index(drop=True), expected.reset_index(drop=True))
-
+            assert_frame_equal(result, expected, check_like=True)
+            
     def test_transform_dim_races(self):
         data = {
             "raceId": [2, 4, 8],
@@ -81,18 +81,6 @@ class TestTransform_df:
             "circuitId": [1, 5, 19],
             "name":["Chinese Grand Prix", "Spanish Grand Prix", "German Grand Prix"],
             "date":["2007-03-01", "2012-08-11", "2022-12-05"], 
-            "time":["06:00:00", "12:00:00", "12:00:00"],
-            "url":["http://en.wikipedia.org/wiki/2009_Chinese_Grand_Prix", "http://en.wikipedia.org/wiki/2009_Spanish_Grand_Prix", "http://en.wikipedia.org/wiki/2009_German_Grand_Prix"],
-            "fp1_date":[None, None, None],
-            "fp1_time":[None, None, None],
-            "fp2_date":[None, None, None],
-            "fp2_time":[None, None, None],
-            "fp3_date":[None, None, None],
-            "fp3_time":[None, None, None],
-            "quali_date":[None, None, None],
-            "quali_time":[None, None, None],
-            "sprint_date":[None, None, None],
-            "sprint_time":[None, None, None],
         }
 
         expected_data = {
@@ -108,8 +96,8 @@ class TestTransform_df:
             result = transform_df("dim_races")
             expected = pd.DataFrame(expected_data)
             assert isinstance(result, pd.DataFrame)
-            assert_frame_equal(result.reset_index(drop=True), expected.reset_index(drop=True))
-    
+            assert_frame_equal(result, expected, check_like=True)
+
     def test_transform_dim_circuits(self):
         data = {
             "circuitId": [1, 4, 7],
@@ -136,4 +124,84 @@ class TestTransform_df:
             result = transform_df("dim_circuits")
             expected = pd.DataFrame(expected_data)
             assert isinstance(result, pd.DataFrame)
-            assert_frame_equal(result.reset_index(drop=True), expected.reset_index(drop=True))
+            assert_frame_equal(result, expected, check_like=True)
+
+    def test_transform_fact_race_results(self):
+        data = {
+            "resultId":[2, 4, 7],
+            "raceId":[12, 34, 66],
+            "driverId":[6, 88, 21],
+            "constructorId":[4, 6, 8],
+            "fastestLapTime": ["1:26.452", "1:27.142", "1:27.892"],
+            "number":[2, 6, 71],
+            "grid":[1, 5, 7],
+            "position":[1, 4, 9],
+            "points":[30, 25, 3],
+        }
+
+        expected_data = {
+            "race_id":[12, 34, 66],
+            "driver_id":[6, 88, 21],
+            "constructor_id":[4, 6, 8],
+            "fastest_lap_time": ["1:26.452", "1:27.142", "1:27.892"],
+            "starting_position":[1, 5, 7],
+            "finish_position":[1, 4, 9],
+            "points":[30, 25, 3],
+        }
+
+        with patch("src.csv_etl_script.csv_to_df") as mock_csv_to_df:
+            mock_csv_to_df.return_value = pd.DataFrame(data)
+            result = transform_df("fact_race_results")
+            expected = pd.DataFrame(expected_data)
+            assert isinstance(result, pd.DataFrame)
+            assert_frame_equal(result, expected, check_like=True)
+        
+    def test_transform_fact_driver_standings(self):
+        data = {
+           "driverStandingsId": [1, 13, 3],
+           "raceId": [4, 6, 8],
+           "driverId": [44, 56, 9],
+           "points": [30, 12, 3],
+           "position": [1, 3, 9],
+           "wins": [2, 7, 0],
+        }
+
+        expected_data = {
+            "race_id": [4, 6, 8],
+            "driver_id": [44, 56, 9],
+            "points": [30, 12, 3],
+            "position": [1, 3, 9],
+            "wins": [2, 7, 0],
+        }
+
+        with patch("src.csv_etl_script.csv_to_df") as mock_csv_to_df:
+            mock_csv_to_df.return_value = pd.DataFrame(data)
+            result = transform_df("fact_driver_standings")
+            expected = pd.DataFrame(expected_data)
+            assert isinstance(result, pd.DataFrame)
+            assert_frame_equal(result, expected, check_like=True)
+    
+    def test_transform_fact_constructor_standings(self):
+        data = {
+            "constructorStandingsId": [1, 4, 5],
+            "raceId": [3, 5, 7], 
+            "constructorId": [12, 5, 9], 
+            "points": [1, 6, 7], 
+            "position": [6, 3, 8],  
+            "wins": [4, 2, 5],   
+        }
+
+        expected_data = {
+            "race_id": [3, 5, 7], 
+            "constructor_id": [12, 5, 9], 
+            "points": [1, 6, 7], 
+            "position": [6, 3, 8],  
+            "wins": [4, 2, 5],   
+        }
+
+        with patch("src.csv_etl_script.csv_to_df") as mock_csv_to_df:
+            mock_csv_to_df.return_value = pd.DataFrame(data)
+            result = transform_df("fact_constructor_standings")
+            expected = pd.DataFrame(expected_data)
+            assert isinstance(result, pd.DataFrame)
+            assert_frame_equal(result, expected, check_like=True)

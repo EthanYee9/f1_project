@@ -65,6 +65,10 @@ def create_connection():
     )
 
 def insert_into_warehouse(df):
-    pass 
+    conn = create_connection()
+    conn.run(
+        # query
+    ) 
+    conn.close()
 
 etl_csv()
