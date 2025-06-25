@@ -22,25 +22,25 @@ def transform_df(table_name):
     match table_name:
         case "dim_constructors":
             constructors_df = csv_to_df("data/constructors.csv")
-            constructors_df = constructors_df.loc[:,["constructorId", "name", "nationality"]]
-            constructors_df.rename(columns={"constructorId": "constructor_id", "name": "constructor_name"}, inplace=True)
+            constructors_df = constructors_df.loc[:,["name", "nationality"]]
+            constructors_df.rename(columns={"name": "constructor_name"}, inplace=True)
             return constructors_df
         case "dim_drivers":
             drivers_df = csv_to_df("data/drivers.csv")
-            drivers_df = drivers_df.loc[:, ["driverId", "forename", "surname", "number", "nationality", "dob"]]
-            drivers_df.rename(columns={"driverId": "driver_id", "number": "driver_number"}, inplace=True)
+            drivers_df = drivers_df.loc[:, ["forename", "surname", "number", "nationality", "dob"]]
+            drivers_df.rename(columns={"number": "driver_number"}, inplace=True)
             drivers_df["full_name"] = drivers_df["forename"] + " " + drivers_df["surname"]
-            drivers_df = drivers_df[["driver_id", "forename", "surname", "full_name", "driver_number", "nationality", "dob"]]
+            drivers_df = drivers_df[["forename", "surname", "full_name", "driver_number", "nationality", "dob"]]
             return drivers_df
         case "dim_races":
             races_df = csv_to_df("data/races.csv")
-            races_df = races_df.loc[:, ["raceId", "circuitId", "year", "round", "date"]]
-            races_df.rename(columns={"raceId": "race_id", "circuitId": "circuit_id"}, inplace=True)
+            races_df = races_df.loc[:, ["circuitId", "year", "round", "date"]]
+            races_df.rename(columns={"circuitId": "circuit_id"}, inplace=True)
             return races_df
         case "dim_circuits":
             circuits_df = csv_to_df("data/circuits.csv")
-            circuits_df = circuits_df.loc[:, ["circuitId", "name", "location", "country"]]
-            circuits_df.rename(columns={"name": "circuit_name", "circuitId": "circuit_id"}, inplace=True)
+            circuits_df = circuits_df.loc[:, ["name", "location", "country"]]
+            circuits_df.rename(columns={"name": "circuit_name"}, inplace=True)
             return circuits_df
         case "fact_race_results":
             race_results_df = csv_to_df("data/results.csv")
