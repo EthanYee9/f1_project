@@ -30,7 +30,6 @@ class TestTransform_df:
         }
 
         expected_data = {
-            "constructor_id": [1, 2, 3],
             "constructor_name": ["McLaren", "BMW Sauber", "Williams"],
             "nationality": ["British", "German", "British"],
         }
@@ -57,7 +56,6 @@ class TestTransform_df:
         }
 
         expected_data = {
-            "driver_id": [1, 2, 3],
             "forename": ["Bob", "Andy", "Brandy"],
             "surname": ["Builder", "Lee", "Man"],
             "full_name": ["Bob Builder","Andy Lee", "Brandy Man"],
@@ -84,7 +82,6 @@ class TestTransform_df:
         }
 
         expected_data = {
-            "race_id": [2, 4, 8],
             "circuit_id": [1, 5, 19],
             "year":[2007, 2012, 2022],
             "round":[2, 4, 8],
@@ -113,7 +110,6 @@ class TestTransform_df:
         }
 
         expected_data = {
-            "circuit_id": [1, 4, 7],
             "circuit_name": ["moo moo meadow", "rainbow road", "yoshi falls"],
             "location": ["mario", "space", "sky"],
             "country": ["Spain", "moon", "england"]

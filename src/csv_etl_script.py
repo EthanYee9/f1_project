@@ -6,8 +6,8 @@ def etl_csv():
         "fact_race_results", "fact_constructor_standings", "fact_driver_standings",
         "dim_constructors", "dim_races", "dim_drivers", "dim_circuits"
     ]
-    # create_database()
-    # create_tables()
+    create_database()
+    create_tables()
 
     for table_name in table_names:
         transformed_df = transform_df(table_name)
@@ -144,7 +144,6 @@ def insert_into_warehouse(df, table_name):
         row_value = ','.join(str_row_values)
         query += f"{row_value},\n"
     query = query[:-2] + ");"
-    print(query)
 
     conn = create_connection()
     conn.run(
@@ -153,4 +152,4 @@ def insert_into_warehouse(df, table_name):
 
     conn.close()
 
-etl_csv()
+# etl_csv()
