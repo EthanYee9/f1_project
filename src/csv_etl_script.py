@@ -6,11 +6,14 @@ def etl_csv():
         "fact_race_results", "fact_constructor_standings", "fact_driver_standings",
         "dim_constructors", "dim_races", "dim_drivers", "dim_circuits"
     ]
+    create_database()
+    create_tables()
 
     for table_name in table_names:
         transformed_df = transform_df(table_name)
-        insert_into_warehouse(transformed_df)
-
+        insert_into_warehouse(transformed_df, table_name)
+    
+  
 def csv_to_df(file_path):
     df = pd.read_csv(file_path, na_values="\\N")
     return df
@@ -64,11 +67,84 @@ def create_connection():
         database=database, user=user, password=password, port=dbport
     )
 
-def insert_into_warehouse(df):
+def create_database():
+    conn = create_connection()
+    conn.run("""
+        DROP DATABASE IF EXISTS f1_database;
+        CREATE DATABASE f1_database;
+    """) 
+    conn.close()
+
+def create_tables():
+    conn = create_connection()
+    conn.run("""
+        CREATE TABLE dim_circuits (
+            circuit_id INT SERIAL PRIMARY KEY, 
+            circuit_name VARCHAR, 
+            location VARCHAR, 
+            country VARCHAR     
+        );
+        CREATE TABLE dim_constructors (
+            constructor_id INT SERIAL PRIMARY KEY,
+            name VARCHAR, 
+            nationality VARCHAR
+        );
+        CREATE TABLE dim_drivers (
+            driver_id INT PRIMARY KEY, 
+            first_name VARCHAR, 
+            last_name VARCHAR, 
+            full_name VARCHAR, 
+            driver_number INT, 
+            nationality VARCHAR, 
+            dob DATE
+        );
+        CREATE TABLE dim_races (
+            race_id SERIAL PRIMARY KEY, 
+            circuit_id INT REFERENCES dim_circuits(circuit_id), 
+            year INT, 
+            date DATE,
+            round INT   
+        );
+        CREATE TABLE fact_race_results (
+            result_id SERIAL PRIMARY KEY, 
+            race_id INT REFERENCES dim_races(race_id),
+            driver_id INT REFERENCES dim_drivers(driver_id), 
+            finish_position INT, 
+            starting_position INT, 
+            points INT, 
+            fastest_lap INT, 
+            constructor_id INT
+        );
+        CREATE TABLE fact_constructors_standings (
+            race_id INT REFERENCE dim_races(race_id), 
+            constructor_id INT REFERENCES dim_constructors(constructor_id), 
+            points INT, 
+            position INT, 
+            wins INT, 
+            PRIMARY KEY (race_id, constructor_id)
+        );
+        CREATE TABLE fact_driver_standings (
+            race_id INT REFERENCES dim_races(race_id),
+            driver_id INT REFERENCES dim_drivers(driver_id), 
+            points INT, 
+            position INT, 
+            wins INT,
+            PRIMARY KEY (race_id, driver_id)
+        )
+    """) 
+    conn.close()
+
+def insert_into_warehouse(df, table_name):
+    df_heading_list = list(df.columns)
+    query = None
+    for heading in df_heading_list:
+        query += heading 
+    
     conn = create_connection()
     conn.run(
-        # query
+        f"INSERT INTO {table_name} ()" 
     ) 
+
     conn.close()
 
 etl_csv()
