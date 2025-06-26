@@ -6,7 +6,7 @@ def etl_csv():
         "fact_race_results", "fact_constructor_standings", "fact_driver_standings",
         "dim_constructors", "dim_races", "dim_drivers", "dim_circuits"
     ]
-    create_database()
+    # create_database()
     create_tables()
 
     for table_name in table_names:
@@ -60,35 +60,52 @@ def transform_df(table_name):
 
 def create_connection():
     user = "postgres"
-    database = "destination_db"
+    database = "f1_database"
     dbport = 5434
     password = "secret"
     return Connection(
         database=database, user=user, password=password, port=dbport
     )
 
-def create_database():
-    conn = create_connection()
-    conn.run("""
-        DROP DATABASE IF EXISTS f1_database;
-        CREATE DATABASE f1_database;
-    """) 
-    conn.close()
+# def create_database():
+#     conn = create_connection()
+#     conn.run("""
+#         DROP DATABASE IF EXISTS f1_database;
+#         CREATE DATABASE f1_database;
+#     """) 
+#     conn.close()
 
 def create_tables():
     conn = create_connection()
     conn.run("""
+        DROP TABLE IF EXISTS fact_race_results;
+        DROP TABLE IF EXISTS fact_constructors_standings;
+        DROP TABLE IF EXISTS fact_driver_standings;
+        DROP TABLE IF EXISTS dim_races;
+        DROP TABLE IF EXISTS dim_circuits;
+        DROP TABLE IF EXISTS dim_constructors;
+        DROP TABLE IF EXISTS dim_drivers;       
+        
         CREATE TABLE dim_circuits (
-            circuit_id INT SERIAL PRIMARY KEY, 
+            circuit_id SERIAL PRIMARY KEY, 
             circuit_name VARCHAR, 
             location VARCHAR, 
             country VARCHAR     
         );
+        CREATE TABLE dim_races (
+            race_id SERIAL PRIMARY KEY, 
+            circuit_id INT REFERENCES dim_circuits(circuit_id), 
+            year INT, 
+            date DATE,
+            round INT   
+        );
+        
         CREATE TABLE dim_constructors (
-            constructor_id INT SERIAL PRIMARY KEY,
+            constructor_id SERIAL PRIMARY KEY,
             name VARCHAR, 
             nationality VARCHAR
         );
+        
         CREATE TABLE dim_drivers (
             driver_id INT PRIMARY KEY, 
             first_name VARCHAR, 
@@ -97,13 +114,6 @@ def create_tables():
             driver_number INT, 
             nationality VARCHAR, 
             dob DATE
-        );
-        CREATE TABLE dim_races (
-            race_id SERIAL PRIMARY KEY, 
-            circuit_id INT REFERENCES dim_circuits(circuit_id), 
-            year INT, 
-            date DATE,
-            round INT   
         );
         CREATE TABLE fact_race_results (
             result_id SERIAL PRIMARY KEY, 
@@ -116,13 +126,14 @@ def create_tables():
             constructor_id INT
         );
         CREATE TABLE fact_constructors_standings (
-            race_id INT REFERENCE dim_races(race_id), 
+            race_id INT REFERENCES dim_races(race_id), 
             constructor_id INT REFERENCES dim_constructors(constructor_id), 
             points INT, 
             position INT, 
             wins INT, 
             PRIMARY KEY (race_id, constructor_id)
         );
+       
         CREATE TABLE fact_driver_standings (
             race_id INT REFERENCES dim_races(race_id),
             driver_id INT REFERENCES dim_drivers(driver_id), 
@@ -130,7 +141,7 @@ def create_tables():
             position INT, 
             wins INT,
             PRIMARY KEY (race_id, driver_id)
-        )
+        );
     """) 
     conn.close()
 
@@ -138,18 +149,16 @@ def insert_into_warehouse(df, table_name):
     query = f"INSERT INTO {table_name} \n ("
     column_string = ', '.join(df.columns)
     query += column_string
-    query += ") \n VALUES \n ("  
-    for row in range(df.shape[0]):
-        str_row_values = [str(value) for value in df.loc[row, :]]
-        row_value = ','.join(str_row_values)
-        query += f"{row_value},\n"
-    query = query[:-2] + ");"
+    query += ") \n VALUES \n"  
+    if table_name == "dim_circuits":
+        for row in range(df.shape[0]):
+            str_row_values = [str(value) for value in df.loc[row, :]]
+            row_value = ', '.join(str_row_values)
+            query += f"({row_value}),\n"
+        query = query[:-2] + ";"
 
-    conn = create_connection()
-    conn.run(
-        f"""{query}"""
-    ) 
-
-    conn.close()
+    # conn = create_connection()
+    # conn.run(query) 
+    # conn.close()
 
 etl_csv()

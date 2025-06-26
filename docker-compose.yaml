@@ -6,7 +6,7 @@ services:
     networks:
     - etl_network
     environment: 
-      POSTGRES_DB: destination_db
+      POSTGRES_DB: f1_database
       POSTGRES_USER: postgres 
       POSTGRES_PASSWORD: secret
 
