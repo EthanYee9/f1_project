@@ -61,7 +61,7 @@ def transform_df(table_name):
 def create_connection():
     user = "postgres"
     database = "destination_db"
-    dbport = 5432
+    dbport = 5434
     password = "secret"
     return Connection(
         database=database, user=user, password=password, port=dbport
@@ -152,4 +152,4 @@ def insert_into_warehouse(df, table_name):
 
     conn.close()
 
-# etl_csv()
+etl_csv()
