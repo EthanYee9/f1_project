@@ -6,9 +6,8 @@ def etl_csv():
         "fact_race_results", "fact_constructor_standings", "fact_driver_standings",
         "dim_constructors", "dim_races", "dim_drivers", "dim_circuits"
     ]
-    # create_database()
+    
     create_tables()
-
     for table_name in table_names:
         transformed_df = transform_df(table_name)
         insert_into_warehouse(transformed_df, table_name)
@@ -66,14 +65,6 @@ def create_connection():
     return Connection(
         database=database, user=user, password=password, port=dbport
     )
-
-# def create_database():
-#     conn = create_connection()
-#     conn.run("""
-#         DROP DATABASE IF EXISTS f1_database;
-#         CREATE DATABASE f1_database;
-#     """) 
-#     conn.close()
 
 def create_tables():
     conn = create_connection()
@@ -150,15 +141,26 @@ def insert_into_warehouse(df, table_name):
     column_string = ', '.join(df.columns)
     query += column_string
     query += ") \n VALUES \n"  
-    if table_name == "dim_circuits":
-        for row in range(df.shape[0]):
-            str_row_values = [str(value) for value in df.loc[row, :]]
-            row_value = ', '.join(str_row_values)
-            query += f"({row_value}),\n"
-        query = query[:-2] + ";"
+    
+    # if table_name == "fact_race_results":
+    for row in range(df.shape[0]):
+        row_value_list = []
+        for value in df.loc[row, :]:
+            if isinstance(value,str):
+                row_value_list.append(f"'{value}'")
+            if pd.isna(value):
+                row_value_list.append("NULL")
+            elif not isinstance(value, str):
+                row_value_list.append(str(value))
+        row_value = ', '.join(row_value_list)
+        query += f"({row_value}),\n"
+    query = query[:-2] + ";"
+    print(query)
+
 
     # conn = create_connection()
     # conn.run(query) 
+    # print("running")
     # conn.close()
 
 etl_csv()
