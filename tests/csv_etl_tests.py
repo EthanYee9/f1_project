@@ -139,7 +139,7 @@ class TestTransform_df:
             "race_id":[12, 34, 66],
             "driver_id":[6, 88, 21],
             "constructor_id":[4, 6, 8],
-            "fastest_lap_time": ["1:26.452", "1:27.142", "1:27.892"],
+            "fastest_lap_time": [86.452, 87.142, 87.892],
             "starting_position":[1, 5, 7],
             "finish_position":[1, 4, 9],
             "points":[30, 25, 3],
@@ -148,6 +148,7 @@ class TestTransform_df:
         with patch("src.csv_etl_script.csv_to_df") as mock_csv_to_df:
             mock_csv_to_df.return_value = pd.DataFrame(data)
             result = transform_df("fact_race_results")
+            print(result)
             expected = pd.DataFrame(expected_data)
             assert isinstance(result, pd.DataFrame)
             assert_frame_equal(result, expected, check_like=True)

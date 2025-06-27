@@ -1,4 +1,6 @@
 import pandas as pd
+from decimal import Decimal
+from datetime import datetime
 from pg8000.native import Connection 
 
 def etl_csv():
@@ -45,6 +47,16 @@ def transform_df(table_name):
             race_results_df = csv_to_df("data/results.csv")
             race_results_df = race_results_df.loc[:, ["raceId", "driverId", "position", "grid", "points", "fastestLapTime", "constructorId"]]
             race_results_df.rename(columns={"raceId": "race_id", "driverId": "driver_id", "position": "finish_position", "grid": "starting_position", "fastestLapTime": "fastest_lap_time", "constructorId": "constructor_id"}, inplace=True)
+            fastest_lap_times = []
+
+            # converting fastest lap time into seconds 
+            for row, value in enumerate(race_results_df.loc[:,"fastest_lap_time"]):
+                if pd.isna(value):
+                    fastest_lap_times.append(None)
+                    continue
+                fastest_lap_in_seconds = Decimal(value[0]) * 60 + Decimal(value[2:])
+                fastest_lap_times.append(float(fastest_lap_in_seconds))
+            race_results_df["fastest_lap_time"] = fastest_lap_times
             return race_results_df
         case "fact_driver_standings":
             driver_standings_df = csv_to_df("data/driver_standings.csv")
@@ -113,7 +125,7 @@ def create_tables():
             finish_position INT, 
             starting_position INT, 
             points INT, 
-            fastest_lap INT, 
+            fastest_lap_time DOUBLE PRECISION, 
             constructor_id INT
         );
         CREATE TABLE fact_constructors_standings (
@@ -155,12 +167,11 @@ def insert_into_warehouse(df, table_name):
         row_value = ', '.join(row_value_list)
         query += f"({row_value}),\n"
     query = query[:-2] + ";"
-    print(query)
+    # print(query)
 
-
-    # conn = create_connection()
-    # conn.run(query) 
-    # print("running")
-    # conn.close()
+    conn = create_connection()
+    conn.run(query) 
+    print("running")
+    conn.close()
 
 etl_csv()
