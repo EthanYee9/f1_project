@@ -1,12 +1,12 @@
 import pandas as pd
 from decimal import Decimal
-from datetime import datetime
 from pg8000.native import Connection 
 
 def etl_csv():
     table_names = [
+        "dim_circuits", "dim_constructors", "dim_races", "dim_drivers", 
         "fact_race_results", "fact_constructor_standings", "fact_driver_standings",
-        "dim_constructors", "dim_races", "dim_drivers", "dim_circuits"
+        
     ]
     
     create_tables()
@@ -42,6 +42,7 @@ def transform_df(table_name):
             circuits_df = csv_to_df("data/circuits.csv")
             circuits_df = circuits_df.loc[:, ["name", "location", "country"]]
             circuits_df.rename(columns={"name": "circuit_name"}, inplace=True)
+            print(circuits_df.loc[:,:])
             return circuits_df
         case "fact_race_results":
             race_results_df = csv_to_df("data/results.csv")
@@ -105,14 +106,14 @@ def create_tables():
         
         CREATE TABLE dim_constructors (
             constructor_id SERIAL PRIMARY KEY,
-            name VARCHAR, 
+            constructor_name VARCHAR, 
             nationality VARCHAR
         );
         
         CREATE TABLE dim_drivers (
             driver_id INT PRIMARY KEY, 
-            first_name VARCHAR, 
-            last_name VARCHAR, 
+            forename VARCHAR, 
+            surname VARCHAR, 
             full_name VARCHAR, 
             driver_number INT, 
             nationality VARCHAR, 
@@ -159,6 +160,7 @@ def insert_into_warehouse(df, table_name):
         row_value_list = []
         for value in df.loc[row, :]:
             if isinstance(value,str):
+                value = value.replace("'", "''")
                 row_value_list.append(f"'{value}'")
             if pd.isna(value):
                 row_value_list.append("NULL")
