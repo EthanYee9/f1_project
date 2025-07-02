@@ -6,7 +6,6 @@ def etl_csv():
     table_names = [
         "dim_circuits", "dim_constructors", "dim_races", "dim_drivers", 
         "fact_race_results", "fact_constructor_standings", "fact_driver_standings",
-        
     ]
     
     create_tables()
@@ -22,30 +21,30 @@ def csv_to_df(file_path):
 def transform_df(table_name):
     match table_name:
         case "dim_constructors":
-            constructors_df = csv_to_df("data/constructors.csv")
+            constructors_df = csv_to_df("data/src_data/constructors.csv")
             constructors_df = constructors_df.loc[:,["name", "nationality"]]
             constructors_df.rename(columns={"name": "constructor_name"}, inplace=True)
             return constructors_df
         case "dim_drivers":
-            drivers_df = csv_to_df("data/drivers.csv")
+            drivers_df = csv_to_df("data/src_data/drivers.csv")
             drivers_df = drivers_df.loc[:, ["forename", "surname", "number", "nationality", "dob"]]
             drivers_df.rename(columns={"number": "driver_number"}, inplace=True)
             drivers_df["full_name"] = drivers_df["forename"] + " " + drivers_df["surname"]
             drivers_df = drivers_df[["forename", "surname", "full_name", "driver_number", "nationality", "dob"]]
             return drivers_df
         case "dim_races":
-            races_df = csv_to_df("data/races.csv")
+            races_df = csv_to_df("data/src_data/races.csv")
             races_df = races_df.loc[:, ["circuitId", "year", "round", "date"]]
             races_df.rename(columns={"circuitId": "circuit_id"}, inplace=True)
+            print(races_df)
             return races_df
         case "dim_circuits":
-            circuits_df = csv_to_df("data/circuits.csv")
+            circuits_df = csv_to_df("data/src_data/circuits.csv")
             circuits_df = circuits_df.loc[:, ["name", "location", "country"]]
             circuits_df.rename(columns={"name": "circuit_name"}, inplace=True)
-            print(circuits_df.loc[:,:])
             return circuits_df
         case "fact_race_results":
-            race_results_df = csv_to_df("data/results.csv")
+            race_results_df = csv_to_df("data/src_data/results.csv")
             race_results_df = race_results_df.loc[:, ["raceId", "driverId", "position", "grid", "points", "fastestLapTime", "constructorId"]]
             race_results_df.rename(columns={"raceId": "race_id", "driverId": "driver_id", "position": "finish_position", "grid": "starting_position", "fastestLapTime": "fastest_lap_time", "constructorId": "constructor_id"}, inplace=True)
             fastest_lap_times = []
@@ -60,12 +59,12 @@ def transform_df(table_name):
             race_results_df["fastest_lap_time"] = fastest_lap_times
             return race_results_df
         case "fact_driver_standings":
-            driver_standings_df = csv_to_df("data/driver_standings.csv")
+            driver_standings_df = csv_to_df("data/src_data/driver_standings.csv")
             driver_standings_df = driver_standings_df.loc[:, ["raceId", "driverId", "points", "position", "wins"]]
             driver_standings_df.rename(columns={"raceId": "race_id", "driverId": "driver_id"}, inplace=True)
             return driver_standings_df
         case "fact_constructor_standings":
-            constructor_standings_df = csv_to_df("data/constructor_standings.csv")
+            constructor_standings_df = csv_to_df("data/src_data/constructor_standings.csv")
             constructor_standings_df = constructor_standings_df.loc[:, ["raceId", "constructorId", "points", "position", "wins"]]
             constructor_standings_df.rename(columns={"raceId": "race_id", "constructorId": "constructor_id"}, inplace=True)
             return constructor_standings_df
@@ -111,7 +110,7 @@ def create_tables():
         );
         
         CREATE TABLE dim_drivers (
-            driver_id INT PRIMARY KEY, 
+            driver_id SERIAL PRIMARY KEY, 
             forename VARCHAR, 
             surname VARCHAR, 
             full_name VARCHAR, 
@@ -176,4 +175,5 @@ def insert_into_warehouse(df, table_name):
     print("running")
     conn.close()
 
-etl_csv()
+if __name__ == "__main__":
+    etl_csv()
