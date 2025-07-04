@@ -1,6 +1,26 @@
 import pandas as pd
+import time
 from decimal import Decimal
 from pg8000.native import Connection 
+import os
+print("Working directory:", os.getcwd())
+
+def wait_for_connection(max_retries=5, delay=5):
+    retries = 0 
+    while retries < max_retries:
+        try:
+            conn = create_connection()
+            conn.run("SELECT 1;")
+            conn.close()
+            print("connection established")
+            return 
+        except Exception as e:
+            retries += 1
+            print(f"error connecting to postgres: {e}")
+            print(f"retrying in {delay} seconds ... (Attempt number {retries})")
+            time.sleep(delay)
+    print("Max retries reached. Exiting")
+    exit(1)
 
 def etl_csv():
     table_names = [
@@ -186,4 +206,5 @@ def insert_into_warehouse(df, table_name):
     conn.close()
 
 if __name__ == "__main__":
+    wait_for_connection()
     etl_csv()
