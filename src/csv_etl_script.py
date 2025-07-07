@@ -3,7 +3,7 @@ import time
 from decimal import Decimal
 from pg8000.native import Connection 
 import os
-print("Working directory:", os.getcwd())
+from dotenv import load_dotenv
 
 def wait_for_connection(max_retries=5, delay=5):
     retries = 0 
@@ -99,11 +99,12 @@ def transform_df(table_name):
             return constructor_standings_df
 
 def create_connection():
-    database = "f1_database"
-    host = "postgres"
-    user = "postgres"
-    dbport = 5432
-    password = "secret"
+    load_dotenv()
+    database = os.environ["POSTGRES_DB"]
+    host = os.environ["POSTGRES_HOST"]
+    user = os.environ["POSTGRES_USER"]
+    dbport = os.environ["POSTGRES_PORT"]
+    password = os.environ["POSTGRES_PASSWORD"]
     return Connection(
         database=database, host=host, user=user, password=password, port=dbport
     )
