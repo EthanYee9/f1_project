@@ -1,8 +1,8 @@
 import pandas as pd
 import time
+import os
 from decimal import Decimal
 from pg8000.native import Connection 
-import os
 from dotenv import load_dotenv
 
 def wait_for_connection(max_retries=5, delay=5):
@@ -99,12 +99,12 @@ def transform_df(table_name):
             return constructor_standings_df
 
 def create_connection():
-    load_dotenv()
+    load_dotenv(override=True)
     database = os.environ["POSTGRES_DB"]
-    host = os.environ["POSTGRES_HOST"]
     user = os.environ["POSTGRES_USER"]
-    dbport = os.environ["POSTGRES_PORT"]
     password = os.environ["POSTGRES_PASSWORD"]
+    host = os.environ["POSTGRES_HOST"]
+    dbport = os.environ["POSTGRES_PORT"]
     return Connection(
         database=database, host=host, user=user, password=password, port=dbport
     )
@@ -185,7 +185,6 @@ def insert_into_warehouse(df, table_name):
     query += column_string
     query += ") \n VALUES \n"  
     
-    # if table_name == "fact_race_results":
     for row in range(df.shape[0]):
         row_value_list = []
         for value in df.loc[row, :]:
@@ -199,7 +198,6 @@ def insert_into_warehouse(df, table_name):
         row_value = ', '.join(row_value_list)
         query += f"({row_value}),\n"
     query = query[:-2] + ";"
-    # print(query)
 
     conn = create_connection()
     conn.run(query) 
