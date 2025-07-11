@@ -26,11 +26,12 @@ def creating_df(conn, driver, circuit, round, grid, team, year):
     driver_history_df.to_csv("driver_history_data.csv", sep=',', index=False, na_rep='\\N')
 
     constructor_data = extract_car_data(conn, round, team, year)
-    constructor_df = pd.DataFrame(constructor_data, columns=["Team", "Team id","Year", "Points", "Constructor's position", "Wins", "finish position"])
+    constructor_df = pd.DataFrame(constructor_data, columns=["Team", "Team id", "Race id", "Year", "Points", "Constructor's position", "Wins", "finish position"])
     print(constructor_df)
+    constructor_df.to_csv("constructor_season_data.csv", sep=',', index=False, na_rep='\\N')
 
     drivers_season_data = extract_driver_season_data(conn, round, year)
-    drivers_season_df = pd.DataFrame(drivers_season_data, columns=["Name", "Driver id", "Year", "Points", "Position", "Wins", "Finishing position"])
+    drivers_season_df = pd.DataFrame(drivers_season_data, columns=["Name", "Driver id", "Race id", "Year", "Points", "Position", "Wins", "Finishing position"])
     print(drivers_season_df)
     driver_history_df.to_csv("driver_season_data.csv", sep=',', index=False, na_rep='\\N')
 
@@ -48,26 +49,47 @@ def extract_result_data(conn, driver, year, round):
     return race_results
 
 def extract_car_data(conn, round, team, year):
+    # constructor standings before the race 
     constructor_standings = conn.run(f"""
-        SELECT dim_constructors.constructor_name, fact_constructor_standings.constructor_id, dim_races.year, fact_constructor_standings.points, fact_constructor_standings.position, fact_constructor_standings.wins, fact_race_results.finish_position
-        FROM fact_constructor_standings
-        JOIN dim_races ON fact_constructor_standings.race_id = dim_races.race_id 
-        JOIN dim_constructors ON fact_constructor_standings.constructor_id = dim_constructors.constructor_id
-        JOIN fact_race_results ON fact_race_results.race_id = fact_constructor_standings.race_id AND fact_race_results.constructor_id = fact_constructor_standings.constructor_id
-        WHERE fact_race_results.finish_position > 0 AND (dim_races.year < '{year}' OR (dim_races.year = '{year}' AND dim_races.round < '{round}'))
-        GROUP BY dim_constructors.constructor_name, fact_constructor_standings.constructor_id, dim_races.year, fact_constructor_standings.points, fact_constructor_standings.position, fact_constructor_standings.wins, fact_race_results.finish_position;
-    """) 
+        WITH previous_standings AS (
+            SELECT dim_constructors.constructor_name, fact_constructor_standings.constructor_id, dim_races.race_id, dim_races.year, dim_races.round, fact_constructor_standings.points, fact_constructor_standings.position, fact_constructor_standings.wins
+            FROM fact_constructor_standings
+            JOIN dim_races ON fact_constructor_standings.race_id = dim_races.race_id 
+            JOIN dim_constructors ON fact_constructor_standings.constructor_id = dim_constructors.constructor_id
+        ),
+        
+        current_results AS (
+            SELECT fact_race_results.constructor_id, dim_races.race_id, dim_races.year, dim_races.round, fact_race_results.finish_position
+            FROM fact_race_results
+            JOIN dim_races ON fact_race_results.race_id = dim_races.race_id   
+        )
+                        
+        SELECT ps.constructor_name, ps.constructor_id, cr.race_id, ps.year, ps.points, ps.position, ps.wins, cr.finish_position
+        FROM previous_standings ps
+        JOIN current_results cr ON ps.constructor_id = cr.constructor_id AND ps.year = cr.year AND ps.round + 1 = cr.round
+        WHERE cr.finish_position > 0 AND (ps.year < '{year}' OR (ps.year = '{year}' AND ps.round < '{round}'));
+        """) 
     return constructor_standings
 
 def extract_driver_season_data(conn, round, year):
+     # driver standings before the race 
     driver_data = conn.run(f"""
-        SELECT dim_drivers.full_name, fact_driver_standings.driver_id, dim_races.year, fact_driver_standings.points, fact_driver_standings.position, fact_driver_standings.wins, fact_race_results.finish_position
-        FROM fact_driver_standings 
-        JOIN dim_races ON fact_driver_standings.race_id = dim_races.race_id
-        JOIN dim_drivers ON fact_driver_standings.driver_id = dim_drivers.driver_id
-        JOIN fact_race_results ON fact_driver_standings.driver_id = fact_race_results.driver_id AND fact_race_results.race_id = fact_driver_standings.race_id
-        WHERE fact_race_results.finish_position > 0 AND (dim_races.year < '{year}' OR (dim_races.year = '{year}' AND dim_races.round < '{round}'))
-        GROUP BY dim_drivers.full_name, fact_driver_standings.driver_id, dim_races.year, fact_driver_standings.points, fact_driver_standings.position, fact_driver_standings.wins, fact_race_results.finish_position;
+        WITH previous_standings AS (
+            SELECT dim_drivers.full_name, ds.driver_id, dim_races.race_id, dim_races.year, dim_races.round, ds.points, ds.position, ds.wins
+            FROM fact_driver_standings ds
+            JOIN dim_races ON ds.race_id = dim_races.race_id
+            JOIN dim_drivers ON ds.driver_id = dim_drivers.driver_id
+        ), 
+        current_results AS (
+            SELECT rr.driver_id, dim_races.race_id, dim_races.year, dim_races.round, rr.finish_position
+            FROM fact_race_results rr
+            JOIN dim_races ON rr.race_id = dim_races.race_id   
+        )                                 
+                           
+        SELECT ps.full_name, ps.driver_id, cr.race_id, ps.year, ps.points, ps.position, ps.wins, cr.finish_position
+        FROM previous_standings ps
+        JOIN current_results cr ON ps.driver_id = cr.driver_id AND ps.year = cr.year AND ps.round + 1 = cr.round
+        WHERE cr.finish_position > 0 AND (ps.year < '{year}' OR (ps.year = '{year}' AND ps.round < '{round}'));
     """)
     return driver_data
 
