@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.ensemble import RandomForestRegressor
 from src.csv_etl_script import create_connection
 
 def f1_prediction(driver, circuit, grid, team, year):
@@ -21,30 +21,51 @@ def round_lookup(conn, circuit, year):
 
 def creating_df(conn, driver, circuit, round, grid, team, year):
     driver_history_data = extract_result_data(conn, driver, year, round)
-    driver_history_df = pd.DataFrame(driver_history_data, columns=["Name", "Driver id", "Year", "Circuit", "Circuit id","Starting position", "Finishing position"])
+    driver_history_df = pd.DataFrame(driver_history_data, columns=["Name", "Driver id", "Race id", "Year", "Circuit", "Circuit id", "Constructor id", "Starting position", "Finishing position"])
     print(driver_history_df)
     driver_history_df.to_csv("driver_history_data.csv", sep=',', index=False, na_rep='\\N')
+    
 
     constructor_data = extract_car_data(conn, round, team, year)
-    constructor_df = pd.DataFrame(constructor_data, columns=["Team", "Team id", "Race id", "Year", "Points", "Constructor's position", "Wins", "finish position"])
+    constructor_df = pd.DataFrame(constructor_data, columns=["Team", "Team id", "Race id", "Year", "Team's points", "Constructor's position", "Team wins", "Finishing position"])
     print(constructor_df)
     constructor_df.to_csv("constructor_season_data.csv", sep=',', index=False, na_rep='\\N')
+    constructor_df =  constructor_df.drop(["Team", "Year", "Finishing position"], axis=1)
 
     drivers_season_data = extract_driver_season_data(conn, round, year)
-    drivers_season_df = pd.DataFrame(drivers_season_data, columns=["Name", "Driver id", "Race id", "Year", "Points", "Position", "Wins", "Finishing position"])
+    drivers_season_df = pd.DataFrame(drivers_season_data, columns=["Name", "Driver id", "Race id", "Year", "Driver Points", "Driver ranking", "Driver Wins", "Finishing position"])
     print(drivers_season_df)
-    driver_history_df.to_csv("driver_season_data.csv", sep=',', index=False, na_rep='\\N')
+    drivers_season_df.to_csv("driver_season_data.csv", sep=',', index=False, na_rep='\\N')
+    drivers_season_df =  drivers_season_df.drop(["Name", "Year", "Finishing position"], axis=1)
 
-    return driver_history_df, constructor_df, drivers_season_df
+    df = pd.merge(
+        driver_history_df,
+        drivers_season_df, 
+        how = "left", 
+        left_on=["Race id", "Driver id"],
+        right_on=["Race id", "Driver id"]
+    )
+    df = pd.merge(
+        df, 
+        constructor_df, 
+        how = "left", 
+        left_on=["Race id", "Constructor id"],
+        right_on=["Race id", "Team id"]
+    )
+    print(df) 
+    df =  df.drop("Team id", axis=1)
+    df.to_csv("merged_data.csv", sep=',', index=False, na_rep='\\N')
+
+    return df, constructor_df, drivers_season_df
 
 def extract_result_data(conn, driver, year, round):
     race_results = conn.run(f"""
-        SELECT dim_drivers.full_name, fact_race_results.driver_id, dim_races.year, dim_circuits.circuit_name, dim_circuits.circuit_id, fact_race_results.starting_position, fact_race_results.finish_position
-        FROM fact_race_results
-        JOIN dim_drivers ON fact_race_results.driver_id = dim_drivers.driver_id
-        JOIN dim_races ON fact_race_results.race_id = dim_races.race_id  
+        SELECT dim_drivers.full_name, rr.driver_id, rr.race_id, dim_races.year, dim_circuits.circuit_name, dim_circuits.circuit_id, rr.constructor_id, rr.starting_position, rr.finish_position
+        FROM fact_race_results rr
+        JOIN dim_drivers ON rr.driver_id = dim_drivers.driver_id
+        JOIN dim_races ON rr.race_id = dim_races.race_id  
         JOIN dim_circuits ON dim_races.circuit_id = dim_circuits.circuit_id        
-        WHERE dim_races.year < '{year}' AND fact_race_results.finish_position > 0 OR (dim_races.year = '{year}' AND dim_races.round < '{round}'); 
+        WHERE dim_races.year < '{year}' AND rr.finish_position > 0 OR (dim_races.year = '{year}' AND dim_races.round < '{round}'); 
     """) 
     return race_results
 
@@ -93,11 +114,11 @@ def extract_driver_season_data(conn, round, year):
     """)
     return driver_data
 
-def ml_driver_results(driver_history_df, df_constructor_season, df_driver_season, custom_input_dict=None):
-    X = driver_history_df.drop(columns=["Name","Circuit", "Finishing position"])
-    y = driver_history_df["Finishing position"]
+def ml_driver_results(df, custom_input_dict=None):
+    X = df.drop(columns=["Name", "Race id", "Circuit", "Finishing position"])
+    y = df["Finishing position"]
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=9, test_size=0.3)
-    model_driver_result = GradientBoostingRegressor()
+    model_driver_result = RandomForestRegressor()
     model_driver_result.fit(X_train, y_train)
     pred_1 = model_driver_result.predict(X_test)
     score = model_driver_result.score(X_test, y_test)
@@ -109,38 +130,9 @@ def ml_driver_results(driver_history_df, df_constructor_season, df_driver_season
     results_df["Predicted"] = pred_1.round()
     print(results_df.head(10))
 
-    if custom_input_dict:
-        input_df = pd.DataFrame([custom_input_dict])[X.columns]
-        custom_prediction = model_driver_result.predict(input_df)
-        print("\nPredicted finishing position:", round(custom_prediction[0]))
-
-    X2 = df_constructor_season.drop(columns=["Team", "finish position"])
-    y2 = df_constructor_season["finish position"]
-    X2_train, X2_test, y2_train, y2_test = train_test_split(X2, y2, test_size=0.3, random_state=9)
-    model_constructor = GradientBoostingRegressor()
-    model_constructor.fit(X2_train, y2_train)
-    pred_2 = model_constructor.predict(X2_test)
-    score = model_constructor.score(X2_test, y2_test)
-    print(score)
-    # displaying test predictions 
-    results_df = X2_test.copy()
-    results_df["Actual"] = y2_test
-    results_df["Predicted"] = pred_2.round()
-    print(results_df.head(10))
-
-    # Driver season model
-    X3 = df_driver_season.drop(columns=["Name", "Finishing position"])
-    y3 = df_driver_season["Finishing position"]
-    X3_train, X3_test, y3_train, y3_test = train_test_split(X3, y3, test_size=0.3, random_state=9)
-    model_driver_season = GradientBoostingRegressor()
-    model_driver_season.fit(X3_train, y3_train)
-    pred_3 = model_driver_season.predict(X3_test)
-    score = model_driver_season.score(X3_test, y3_test)
-    print(score)
-    # displaying test predictions 
-    results_df = X3_test.copy()
-    results_df["Actual"] = y3_test
-    results_df["Predicted"] = pred_3.round()
-    print(results_df.head(10))
+    # if custom_input_dict:
+    #     input_df = pd.DataFrame([custom_input_dict])[X.columns]
+    #     custom_prediction = model_driver_result.predict(input_df)
+    #     print("\nPredicted finishing position:", round(custom_prediction[0]))
 
 f1_prediction("Lewis Hamilton", "Autódromo José Carlos Pace", None, "McLaren", 2022)
