@@ -1,39 +1,39 @@
 import pandas as pd
-import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from src.csv_etl_script import create_connection
 
-def f1_prediction(driver, circuit, grid, team, year):
+def f1_prediction():
     conn = create_connection()
-    round = round_lookup(conn, circuit, year)
-    driver_history_df, constructor_df, drivers_season_df = creating_df(conn, driver, circuit, round, grid, team, year)
+    predict_dict = input_data(conn)
+    round = round_lookup(conn, predict_dict["Circuit id"], predict_dict["Year"])
+    df = creating_df(conn, round, predict_dict["Year"])
     conn.close()
-    ml_driver_results(driver_history_df,  constructor_df, drivers_season_df, {"Driver id": 1, "Year":2020, "Circuit id": 1, "Starting position":1})
+    ml_driver_results(df, predict_dict)
 
-def round_lookup(conn, circuit, year):
+def round_lookup(conn, circuit_id, year):
     round_number = conn.run(f"""
         SELECT dim_races.round FROM dim_races
         JOIN dim_circuits ON dim_races.circuit_id = dim_circuits.circuit_id
-        WHERE dim_circuits.circuit_name = '{circuit}' and dim_races.year = '{year}';
+        WHERE dim_circuits.circuit_id = '{circuit_id}' and dim_races.year = '{year}';
     """)
     return round_number[0][0]
 
-def creating_df(conn, driver, circuit, round, grid, team, year):
-    driver_history_data = extract_result_data(conn, driver, year, round)
+def creating_df(conn, round, year):
+    driver_history_data = extract_result_data(conn, year, round)
     driver_history_df = pd.DataFrame(driver_history_data, columns=["Name", "Driver id", "Race id", "Year", "Circuit", "Circuit id", "Constructor id", "Starting position", "Finishing position"])
     print(driver_history_df)
     driver_history_df.to_csv("driver_history_data.csv", sep=',', index=False, na_rep='\\N')
     
 
-    constructor_data = extract_car_data(conn, round, team, year)
-    constructor_df = pd.DataFrame(constructor_data, columns=["Team", "Team id", "Race id", "Year", "Team's points", "Constructor's position", "Team wins", "Finishing position"])
+    constructor_data = extract_car_data(conn, round, year)
+    constructor_df = pd.DataFrame(constructor_data, columns=["Team", "Team id", "Race id", "Year", "Team points", "Team ranking", "Team wins", "Finishing position"])
     print(constructor_df)
     constructor_df.to_csv("constructor_season_data.csv", sep=',', index=False, na_rep='\\N')
     constructor_df =  constructor_df.drop(["Team", "Year", "Finishing position"], axis=1)
 
     drivers_season_data = extract_driver_season_data(conn, round, year)
-    drivers_season_df = pd.DataFrame(drivers_season_data, columns=["Name", "Driver id", "Race id", "Year", "Driver Points", "Driver ranking", "Driver Wins", "Finishing position"])
+    drivers_season_df = pd.DataFrame(drivers_season_data, columns=["Name", "Driver id", "Race id", "Year", "Driver points", "Driver ranking", "Driver wins", "Finishing position"])
     print(drivers_season_df)
     drivers_season_df.to_csv("driver_season_data.csv", sep=',', index=False, na_rep='\\N')
     drivers_season_df =  drivers_season_df.drop(["Name", "Year", "Finishing position"], axis=1)
@@ -56,9 +56,9 @@ def creating_df(conn, driver, circuit, round, grid, team, year):
     df =  df.drop("Team id", axis=1)
     df.to_csv("merged_data.csv", sep=',', index=False, na_rep='\\N')
 
-    return df, constructor_df, drivers_season_df
+    return df
 
-def extract_result_data(conn, driver, year, round):
+def extract_result_data(conn, year, round):
     race_results = conn.run(f"""
         SELECT dim_drivers.full_name, rr.driver_id, rr.race_id, dim_races.year, dim_circuits.circuit_name, dim_circuits.circuit_id, rr.constructor_id, rr.starting_position, rr.finish_position
         FROM fact_race_results rr
@@ -69,7 +69,7 @@ def extract_result_data(conn, driver, year, round):
     """) 
     return race_results
 
-def extract_car_data(conn, round, team, year):
+def extract_car_data(conn, round, year):
     # constructor standings before the race 
     constructor_standings = conn.run(f"""
         WITH previous_standings AS (
@@ -130,9 +130,66 @@ def ml_driver_results(df, custom_input_dict=None):
     results_df["Predicted"] = pred_1.round()
     print(results_df.head(10))
 
-    # if custom_input_dict:
-    #     input_df = pd.DataFrame([custom_input_dict])[X.columns]
-    #     custom_prediction = model_driver_result.predict(input_df)
-    #     print("\nPredicted finishing position:", round(custom_prediction[0]))
+    if custom_input_dict:
+        input_df = pd.DataFrame([custom_input_dict])
+        print(input_df)
+        custom_prediction = model_driver_result.predict(input_df)
+        print("\nPredicted finishing position:", round(custom_prediction[0]))
 
-f1_prediction("Lewis Hamilton", "Autódromo José Carlos Pace", None, "McLaren", 2022)
+def input_data(conn):
+    predict_dict = {}
+    print("To predict F1 result please:")
+    print("Input driver name e.g. 'Lewis Hamilton'")
+    driver_name = input()
+    predict_dict["Driver id"] = driver_lookup(conn, driver_name)
+    print("Input Year of race e.g. '2023'")
+    predict_dict["Year"]= input()
+    print("Input Circuit name e.g. 'Albert Park Grand Prix Circuit'")
+    circuit_name= input()
+    predict_dict["Circuit id"] = circuit_lookup(conn, circuit_name)
+    print("Input Team name e.g. 'Mercedes'")
+    team_name = input()
+    predict_dict["Constructor id"] = constructor_lookup(conn, team_name)
+    print("Input starting grid position e.g. 2")
+    predict_dict["Starting position"] = input()
+    print("Input current number of points the driver has this season e.g. 81")
+    predict_dict["Driver points"] = input()
+    print("Input current driver ranking in the championship e.g. 3")
+    predict_dict["Driver ranking"] = input()
+    print("Input current number of wins the driver has this season e.g. 3")
+    predict_dict["Driver wins"] = input()
+    print("Input current number of points the team has this season e.g. 160")
+    predict_dict["Team points"] = input()
+    print("Input current team ranking in the constructors championship e.g. 2")
+    predict_dict["Team ranking"] = input()
+    print("Input current number of wins the team has this season e.g. 4")
+    predict_dict["Team wins"] = input()
+
+    print(predict_dict)
+    return predict_dict
+    
+def driver_lookup(conn, driver_name):
+    driver_id = conn.run(f"""
+        SELECT driver_id 
+        FROM dim_drivers 
+        WHERE full_name = '{driver_name}';
+    """)
+    return driver_id[0][0]
+
+def circuit_lookup(conn, circuit_name):
+    circuit_id = conn.run(f"""
+        SELECT circuit_id 
+        FROM dim_circuits 
+        WHERE circuit_name = '{circuit_name}';
+    """)
+    return circuit_id[0][0]
+
+def constructor_lookup(conn, team_name):
+    constructor_id = conn.run(f"""
+        SELECT constructor_id 
+        FROM dim_constructors 
+        WHERE constructor_name = '{team_name}';
+    """)
+    return constructor_id[0][0]
+
+f1_prediction()
