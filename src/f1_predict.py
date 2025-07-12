@@ -22,19 +22,16 @@ def round_lookup(conn, circuit_id, year):
 def creating_df(conn, round, year):
     driver_history_data = extract_result_data(conn, year, round)
     driver_history_df = pd.DataFrame(driver_history_data, columns=["Name", "Driver id", "Race id", "Year", "Circuit", "Circuit id", "Constructor id", "Starting position", "Finishing position"])
-    print(driver_history_df)
     driver_history_df.to_csv("driver_history_data.csv", sep=',', index=False, na_rep='\\N')
     
 
     constructor_data = extract_car_data(conn, round, year)
     constructor_df = pd.DataFrame(constructor_data, columns=["Team", "Team id", "Race id", "Year", "Team points", "Team ranking", "Team wins", "Finishing position"])
-    print(constructor_df)
     constructor_df.to_csv("constructor_season_data.csv", sep=',', index=False, na_rep='\\N')
     constructor_df =  constructor_df.drop(["Team", "Year", "Finishing position"], axis=1)
 
     drivers_season_data = extract_driver_season_data(conn, round, year)
     drivers_season_df = pd.DataFrame(drivers_season_data, columns=["Name", "Driver id", "Race id", "Year", "Driver points", "Driver ranking", "Driver wins", "Finishing position"])
-    print(drivers_season_df)
     drivers_season_df.to_csv("driver_season_data.csv", sep=',', index=False, na_rep='\\N')
     drivers_season_df =  drivers_season_df.drop(["Name", "Year", "Finishing position"], axis=1)
 
@@ -52,7 +49,6 @@ def creating_df(conn, round, year):
         left_on=["Race id", "Constructor id"],
         right_on=["Race id", "Team id"]
     )
-    print(df) 
     df =  df.drop("Team id", axis=1)
     df.to_csv("merged_data.csv", sep=',', index=False, na_rep='\\N')
 
@@ -124,15 +120,14 @@ def ml_driver_results(df, custom_input_dict=None):
     score = model_driver_result.score(X_test, y_test)
     print(score)
 
-    # displaying test predictions 
-    results_df = X_test.copy()
-    results_df["Actual"] = y_test
-    results_df["Predicted"] = pred_1.round()
-    print(results_df.head(10))
+    # # displaying test predictions 
+    # results_df = X_test.copy()
+    # results_df["Actual"] = y_test
+    # results_df["Predicted"] = pred_1.round()
+    # print(results_df.head(10))
 
     if custom_input_dict:
         input_df = pd.DataFrame([custom_input_dict])
-        print(input_df)
         custom_prediction = model_driver_result.predict(input_df)
         print("\nPredicted finishing position:", round(custom_prediction[0]))
 
@@ -164,8 +159,6 @@ def input_data(conn):
     predict_dict["Team ranking"] = input()
     print("Input current number of wins the team has this season e.g. 4")
     predict_dict["Team wins"] = input()
-
-    print(predict_dict)
     return predict_dict
     
 def driver_lookup(conn, driver_name):
