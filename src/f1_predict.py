@@ -23,7 +23,6 @@ def creating_df(conn, round, year):
     driver_history_data = extract_result_data(conn, year, round)
     driver_history_df = pd.DataFrame(driver_history_data, columns=["Name", "Driver id", "Race id", "Year", "Circuit", "Circuit id", "Constructor id", "Starting position", "Finishing position"])
     driver_history_df.to_csv("driver_history_data.csv", sep=',', index=False, na_rep='\\N')
-    
 
     constructor_data = extract_car_data(conn, round, year)
     constructor_df = pd.DataFrame(constructor_data, columns=["Team", "Team id", "Race id", "Year", "Team points", "Team ranking", "Team wins", "Finishing position"])
@@ -50,7 +49,7 @@ def creating_df(conn, round, year):
         right_on=["Race id", "Team id"]
     )
     df =  df.drop("Team id", axis=1)
-    df.to_csv("merged_data.csv", sep=',', index=False, na_rep='\\N')
+    # df.to_csv("merged_data.csv", sep=',', index=False, na_rep='\\N')
 
     return df
 
