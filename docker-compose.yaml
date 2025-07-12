@@ -31,6 +31,23 @@ services:
     env_file:
       - .env.docker
 
+  f1_predict:
+    build:
+      context: ./src
+      dockerfile: Dockerfile 
+    command: ["python", "f1_predict.py"]
+    networks:
+      - etl_network
+    depends_on:
+      etl_script:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+    env_file:
+      - .env.docker
+
 networks:
   etl_network:
     driver: bridge
