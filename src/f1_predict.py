@@ -3,13 +3,13 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from src.csv_etl_script import create_connection
 
-def f1_prediction():
+def f1_prediction(predict_dict):
     conn = create_connection()
-    predict_dict = input_data(conn)
     round = round_lookup(conn, predict_dict["Circuit id"], predict_dict["Year"])
     df = creating_df(conn, round, predict_dict["Year"])
     conn.close()
-    ml_driver_results(df, predict_dict)
+    outcome_prediction = ml_driver_results(df, predict_dict)
+    return outcome_prediction
 
 def round_lookup(conn, circuit_id, year):
     round_number = conn.run(f"""
@@ -128,37 +128,8 @@ def ml_driver_results(df, custom_input_dict=None):
     if custom_input_dict:
         input_df = pd.DataFrame([custom_input_dict])
         custom_prediction = model_driver_result.predict(input_df)
-        print("\nPredicted finishing position:", round(custom_prediction[0]))
-
-def input_data(conn):
-    predict_dict = {}
-    print("To predict F1 result please:")
-    print("Input driver name e.g. 'Lewis Hamilton'")
-    driver_name = input()
-    predict_dict["Driver id"] = driver_lookup(conn, driver_name)
-    print("Input Year of race e.g. '2023'")
-    predict_dict["Year"]= input()
-    print("Input Circuit name e.g. 'Albert Park Grand Prix Circuit'")
-    circuit_name= input()
-    predict_dict["Circuit id"] = circuit_lookup(conn, circuit_name)
-    print("Input Team name e.g. 'Mercedes'")
-    team_name = input()
-    predict_dict["Constructor id"] = constructor_lookup(conn, team_name)
-    print("Input starting grid position e.g. 2")
-    predict_dict["Starting position"] = input()
-    print("Input current number of points the driver has this season e.g. 81")
-    predict_dict["Driver points"] = input()
-    print("Input current driver ranking in the championship e.g. 3")
-    predict_dict["Driver ranking"] = input()
-    print("Input current number of wins the driver has this season e.g. 3")
-    predict_dict["Driver wins"] = input()
-    print("Input current number of points the team has this season e.g. 160")
-    predict_dict["Team points"] = input()
-    print("Input current team ranking in the constructors championship e.g. 2")
-    predict_dict["Team ranking"] = input()
-    print("Input current number of wins the team has this season e.g. 4")
-    predict_dict["Team wins"] = input()
-    return predict_dict
+        # print("\nPredicted finishing position:", round(custom_prediction[0]))
+        return round(custom_prediction[0])
     
 def driver_lookup(conn, driver_name):
     driver_id = conn.run(f"""
@@ -183,5 +154,3 @@ def constructor_lookup(conn, team_name):
         WHERE constructor_name = '{team_name}';
     """)
     return constructor_id[0][0]
-
-f1_prediction()
