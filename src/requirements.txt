@@ -5,3 +5,4 @@ pytest-testdox
 python-dotenv
 scikit-learn
 fastapi[standard]
+streamlit
