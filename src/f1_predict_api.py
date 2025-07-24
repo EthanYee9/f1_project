@@ -37,4 +37,4 @@ def predict_f1_outcome(request: PredictionRequest):
 
     outcome_prediction = f1_prediction(predict_dict)
     conn.close()
-    return {"Predicted finishing position": outcome_prediction}
+    return outcome_prediction
