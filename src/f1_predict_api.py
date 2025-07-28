@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from src.f1_predict import *
+from src.f1_charts import *
 
 app = FastAPI()
 
@@ -38,3 +39,13 @@ def predict_f1_outcome(request: PredictionRequest):
     outcome_prediction = f1_prediction(predict_dict)
     conn.close()
     return outcome_prediction
+
+@app.get("/chart")
+def get_f1_charts(driver:str, start_date: str, end_date: str):
+    date_range = (start_date, end_date)
+    race_result_df = race_results_chart(conn, driver, date_range)
+    qualifying_df = qualifying_chart(conn, driver, date_range) 
+    return {
+        "race_result": race_result_df.to_dict(orient="records"),
+        "qualifying": qualifying_df.to_dict(orient="records")
+    }
