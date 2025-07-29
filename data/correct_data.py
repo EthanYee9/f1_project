@@ -115,7 +115,7 @@ def correct_results_data():
         "fastestLap": "Int64",
         "number": "Int64"
     })
-    corrected_results_df.to_csv("data/corrected_data/corrected_results.csv", sep=',', index=False, na_rep='\\N')
+    # corrected_results_df.to_csv("data/corrected_data/corrected_results.csv", sep=',', index=False, na_rep='\\N')
    
     
 def correct_constructor_standings_data():
@@ -166,7 +166,7 @@ def correct_constructor_standings_data():
         "constructorId": "Int64",
         "points": "int64"
     })
-    corrected_constructor_standings_df.to_csv("data/corrected_data/corrected_constructor_standings.csv", sep=',', index=False, na_rep='\\N')
+    # corrected_constructor_standings_df.to_csv("data/corrected_data/corrected_constructor_standings.csv", sep=',', index=False, na_rep='\\N')
 
 def correct_driver_standings_data():
     with open("data/src_data/driver_standings.csv", 'r') as file:
@@ -200,7 +200,7 @@ def correct_driver_standings_data():
     corrected_driver_standings_df = corrected_driver_standings_df.rename(columns={"corrected_race_id":"raceId"})
     col = corrected_driver_standings_df.pop("raceId")
     corrected_driver_standings_df.insert(1,col.name, col)
-    corrected_driver_standings_df.to_csv("data/corrected_data/corrected_driver_standings.csv", sep=',', index=False, na_rep='\\N')
+    # corrected_driver_standings_df.to_csv("data/corrected_data/corrected_driver_standings.csv", sep=',', index=False, na_rep='\\N')
 
 
 correct_results_data()
