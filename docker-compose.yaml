@@ -29,13 +29,15 @@ services:
     volumes:
       - ./data:/app/data
     env_file:
-      - .env.docker
+      - .env
 
-  f1_predict:
+  fast_api:
     build:
       context: ./src
       dockerfile: Dockerfile 
-    command: ["python", "f1_predict.py"]
+    command: ["uvicorn", "f1_predict_api:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+    - "8000:8000"
     networks:
       - etl_network
     depends_on:
@@ -46,7 +48,26 @@ services:
     volumes:
       - ./src:/app/src
     env_file:
-      - .env.docker
+      - .env
+
+  streamlit:
+    build:
+      context: ./src
+      dockerfile: Dockerfile 
+    command: ["streamlit", "run", "streamlit.py","--server.port=8001", "--server.address=0.0.0.0"]
+    ports:
+    - "8001:8001"
+    networks:
+      - etl_network
+    depends_on:
+      etl_script:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+    env_file:
+      - .env
 
 networks:
   etl_network:
