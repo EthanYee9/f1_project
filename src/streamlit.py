@@ -3,7 +3,6 @@ import requests
 import datetime
 import pandas as pd
 from src.csv_etl_script import create_connection
-from src.f1_charts import race_results_chart, qualifying_chart
 
 conn = create_connection()
 
@@ -55,7 +54,7 @@ if st.button("Predict"):
         "team_wins": team_wins
     }
 
-    url = 'http://127.0.0.1:8000/predict'
+    url = 'http://fast_api:8000/predict'
     response = requests.post(url, json=predict_dict)
     print(response.status_code)
     outcome = response.json()
@@ -72,12 +71,12 @@ with col_6:
     start_date, end_date = st.date_input("Select date range",(datetime.date(1950,1,1), datetime.date(2025,1,1)) ,min_value=datetime.date(1950,1,1), max_value=datetime.date(2025,1,1))
 
 
-url = f"http://127.0.0.1:8000/chart?driver={driver}&start_date={start_date}&end_date={end_date}"
+url = f"http://fast_api:8000/chart?driver={driver}&start_date={start_date}&end_date={end_date}"
 response = requests.get(url)
 chart_data = response.json()
 
-race_results_df = pd.DataFrame(chart_data["race_result"])
-qualifying_results_df = pd.DataFrame(chart_data["qualifying"])
+race_results_df = pd.DataFrame(chart_data["race_result"], columns=["Finish position", "Date"])
+qualifying_results_df = pd.DataFrame(chart_data["qualifying"], columns=["Starting position", "Date"])
 
 st.subheader(f"{driver}'s finishing positions over time")
 st.line_chart(race_results_df, x='Date', y=['Finish position'])
