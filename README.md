@@ -2,7 +2,6 @@
 
 An interactive web application that predicts Formula 1 race outcomes and visualises driver performance over time. 
 
-Data set was taken from: https://www.kaggle.com/datasets/jtrotman/formula-1-race-data
 
 ![alt text](image.png)
 
