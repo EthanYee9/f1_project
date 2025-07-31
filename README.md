@@ -2,7 +2,6 @@
 
 An interactive web application that predicts Formula 1 race outcomes and visualises driver performance over time. 
 
-
 ![alt text](image.png)
 
 ![alt text](image-1.png)
@@ -54,12 +53,12 @@ http://0.0.0.0:8001
 ```
 
 ## How it works
-- **ETL pipeline:** A CSV of Formula 1 race data from 1950-2024 was taken from Kaggle (https://www.kaggle.com/datasets/jtrotman/formula-1-race-data). Data was extracted and corrected/processed using pandas before being uploaded into a star schema postgreSQL database using pg8000. 
-- ERD of the database:
+- **ETL pipeline:** Formula 1 race data (1950–2024) was sourced from (https://www.kaggle.com/datasets/jtrotman/formula-1-race-data). The data was cleaned and transformed using pandas, before being loaded into a star schema PostgreSQL database using pg8000. 
+**ERD of the database:**
 
-![alt text](image-2.png)
+    ![alt text](image-2.png)
 
-- **Machine Learning Model:** Data was extracted from the database using pg8000 and loaded into dataframes to train a machine learning model to predict final finishing position using Scikit-learn. The model was trained on race data, constructor standings and driver standings. 
+- **Machine Learning Model:** Data was pulled from the database using pg8000 and loaded into dataframes to train a machine learning model to predict final finishing position using Scikit-learn. The model was trained on race data, constructor standings and driver standings. 
 
 - **FastAPI Backend:** Exposes two api endpoints: 
 
