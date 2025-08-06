@@ -17,7 +17,7 @@ with col_1:
     year = st.selectbox("Select the Year", list_of_years)
 
 with col_2:
-    list_of_circuits = [circuit[0] for circuit in conn.run("SELECT circuit_name FROM dim_circuits;")]
+    list_of_circuits = [circuit[0] for circuit in conn.run(f"SELECT circuit_name FROM dim_circuits JOIN dim_races ON dim_circuits.circuit_id = dim_races.circuit_id WHERE dim_races.year = {year};")]
     circuit = st.selectbox("Select a circuit", list_of_circuits)
 
     list_of_teams = [row[0] for row in conn.run("SELECT constructor_name FROM dim_constructors;")]
